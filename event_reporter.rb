@@ -5,7 +5,6 @@
 ###
 
 require 'csv'
-require 'sunlight'
 require 'text-table'
 
 Dir.glob('*.rb').each do |f|
@@ -17,7 +16,6 @@ AVAILABLE_COMMANDS = ['load <filename>', 'help', 'help <command>', 'queue count'
 
 class EventReporter
   def initialize
-    Sunlight::Base.api_key = "e179a6973728c4dd3fb1204283aaccb5"
     puts "****************************"
     puts "EventReporter Initialized..."
     prompt
@@ -29,7 +27,6 @@ class EventReporter
     input = gets.chomp.downcase
     evaluate(input)
   end
-
 
   def database_load(arg='event_attendees.csv')
     @contents = CSV.open(arg, headers: true, header_converters: :symbol)
