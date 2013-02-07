@@ -2,11 +2,8 @@ class PhoneNumber
   INVALID_NUMBER = "0000000000"
   def initialize number
     @number = number
-    if valid?(@number)
-      @number = number.gsub(/\D/,"")
-    else
-      clean
-    end
+    @number = number.gsub(/\D/,"")
+    clean
   end
 
   def clean

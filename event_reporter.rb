@@ -1,7 +1,7 @@
 ###
 # EventReporter
 # by James Denman
-# Completed 2/3/12
+# Completed 2/7/12
 ###
 
 require 'csv'
@@ -21,7 +21,8 @@ COMMANDS_TO_METHODS = { 'load' => :database_load,
                         'queue clear' => :queue_clear,
                         'queue print' => :queue_print, 
                         'queue save to' => :queue_save_to,
-                        'help' => :help, 'q' => :quit }
+                        'help' => :help, 'quit' => :quit,
+                        'help queue print' => :help_print }
 
 class EventReporter
   def initialize
@@ -58,9 +59,14 @@ class EventReporter
   end
 
   def evaluate(input)
+    if input.split(" ")[0] == "help"
+      command = "help"
+      args = input.split(" ")[1..-1].join(" ").split(" ")
+    else
       command = COMMANDS_TO_METHODS.keys.find {|c| input.include?(c) }
       args = input.gsub(/#{command}/, '').split(" ")
-      do_command(command, args)
+    end
+    do_command(command, args)
     prompt
   end
 
@@ -76,25 +82,33 @@ class EventReporter
     end
   end
 
-  def find(attribute,criteria)
-    attribute.downcase!
-    if attribute == "city"
-      criteria = criteria.split(" ").map {|word| word.downcase.capitalize}.join(" ")
-    elsif attribute =~ /state/i
-      criteria.upcase!
+  def find(*args)
+    if @people.nil?
+      puts "PLEASE LOAD A FILE"
+      prompt
+    elsif args[0] == 'city'
+      attribute = args[0]
+      criteria = args[1..-1].join(" ")
+      @results = @people.select {|f| f[attribute].to_s.downcase == criteria.downcase }
+    elsif args[0] == 'state'
+      attribute = args[0]
+      criteria = args[1]
+      @results = @people.select {|f| f[attribute].to_s.downcase == criteria.downcase }
     else
-      criteria.capitalize!
+      attribute = args[0]
+      criteria = args[1..-1].join(" ")
+      @results = @people.select {|f| f[attribute].to_s.downcase == criteria.downcase }
     end
-    @results = @people.select {|f| f[attribute] == criteria }
     queue_print
     prompt
   end
 
   def queue_count
+    puts ""
     if @results.nil?
-      puts "queue count is 0"
+      puts "Your queue count is 0:"
     else
-      puts "queue count is #{@results.count}"
+      puts "Your queue count is #{@results.count}:"
     end
     prompt
   end
@@ -102,15 +116,17 @@ class EventReporter
   def queue_clear
     @results = []
     sleep(3)
+    puts ""
     if @results.nil?
-      puts "Current queue count is 0"
+      puts "Current queue count is 0:"
     else
-      puts "Current queue count is #{@results.length}"
+      puts "Current queue count is #{@results.length}:"
     end
     prompt
   end
 
   def queue_print
+    puts "PLEASE LOAD A FILE FOR EVALUATION: " if @people.nil?
     @results_array = @results.collect {|r| [r["id"],
       r["first_name"], r["last_name"],
       r["email_address"], r["zipcode"], r["city"],
@@ -146,22 +162,23 @@ class EventReporter
     prompt
   end
 
-  def help(args="")
-    if args.length >= 1
+  def help(*args)
+    if args.any? == false
       puts ""
       puts "****HELP COMMANDS USAGE****"
-      cmd = AVAILABLE_COMMANDS.find {|i| i == args}
-      help_print(cmd)
-    else
       AVAILABLE_COMMANDS.each do |cmd|
         puts cmd
       end
-      prompt
+    else
+      cmd = AVAILABLE_COMMANDS.find {|i| i == args.join(" ")}
+      help_print(cmd)
     end
+    prompt
     puts ""
   end
 
   def help_print(cmd)
+    puts ""
     case cmd
     when 'load <filename>'
       puts "Erases any loaded data and parse the specified file. If no filename is given, defaults to event_attendees.csv."
@@ -170,7 +187,7 @@ class EventReporter
     when 'queue clear'
       puts "Empties the queue."
     when 'queue print'
-      puts "Print out a tab-delimited data table with a header row following this format:"
+      puts "Prints out a tab-delimited data table with a header row following this format:"
       puts "ID LAST NAME  FIRST NAME  EMAIL  ZIPCODE  CITY  STATE  ADDRESS  PHONE"
     when 'queue print by <attribute>'
       puts "Print the data table sorted by the specified attribute like zipcode."
@@ -184,15 +201,22 @@ class EventReporter
 
   def queue_save_to(filename)
     filename = "#{filename}"
-    File.open(filename,'w') do |file|
-      if @results_by_attribute.nil?
-        file.puts @results[0].keys.to_csv
-        @results.map {|result| result.values}.each {|attrs| file.puts attrs.to_csv }
-      else
-        file.puts @results[0].keys.to_csv
-        @results_by_attribute.map {|result| result}.each {|r| file.puts r.to_csv}
+    if @people.nil?
+      File.open(filename,'w') do |file|
+        file.puts "id,regate,first_name,last_name,email_address,homephone,street,city,state,zipcode"
+      end
+    else
+      File.open(filename,'w') do |file|
+        if @results_by_attribute.nil?
+          file.puts @results[0].keys.to_csv
+          @results.map {|result| result.values}.each {|attrs| file.puts attrs.to_csv }
+        else
+          file.puts @results[0].keys.to_s.to_csv
+          @results_by_attribute.map {|result| result}.each {|r| file.puts r.to_csv}
+        end
       end
     end
+    puts "#{filename} saved!"
     prompt
   end
 
