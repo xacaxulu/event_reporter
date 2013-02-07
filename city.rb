@@ -9,9 +9,7 @@ class City
     if @city.nil?
       @city = "NoEntry"
     else
-      @city.downcase.capitalize
+      @city = @city.split(" ").map { |word|  word.downcase.capitalize }.join(" ")
     end
   end
-
-
 end

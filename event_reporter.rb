@@ -6,13 +6,14 @@
 
 require 'csv'
 require 'text-table'
+require 'pry'
 
 Dir.glob('*.rb').each do |f|
   require_relative f unless f == "event_reporter.rb"
 end
 
 AVAILABLE_COMMANDS = ['load <filename>', 'help', 'help <command>', 'queue count', 'queue clear', 'queue print',
-                      'queue print by <attribute>', 'queue save to <filename.csv>', 'find <attribute> <criteria>']
+                      'queue print by <attribute>', 'queue save to <filename.csv>', 'find']
 
 class EventReporter
   def initialize
@@ -48,43 +49,48 @@ class EventReporter
     puts "Loaded #{@people.count} Records from file: '#{arg}'..."
   end
 
-  def evaluate(input)
-    parts = input.split(" ")
-    command = parts
-    if command[0] == 'help'
-      help(command[1..-1].join(" "))
-    elsif command[0] == 'load' && command[1].nil?
-      database_load
-      prompt
-    elsif command[0] == 'load' && !command[1].nil?
-      database_load(command[1])
-      prompt
-    elsif command[0] == 'find'
-      find(command[1],command[2..3].join(" "))
-    elsif command[0] == 'queue' && command[1] == 'count'
-      queue_count
-    elsif command[0] == 'queue' && command[1] == 'clear'
-      queue_clear
-    elsif command[0] == 'queue' && command[1] == 'print' && command[2].nil?
-      queue_print
-    elsif command[0] == 'queue' && command[1..2].join(" ") == "print by"
-      queue_print_by(command[3])
-    elsif command[0] == 'queue' && command[1..2].join(" ") == "save to"
-      queue_save_to(command[3])
-    elsif command[0] == 'q'
+  COMMANDS_TO_METHODS = { 'load' => :database_load,
+                          'find' => :find,
+                          'queue count' => :queue_count,
+                          'queue print by' => :queue_print_by,
+                          'queue clear' => :queue_clear,
+                          'queue print' => :queue_print, 
+                          'queue save to' => :queue_save_to,
+                          'help' => :help, 'q' => :quit }
+
+  def quit
+    exit
+  end
+
+  def do_command(command, args)
+    if COMMANDS_TO_METHODS[command]
+      if args.any?
+        send(COMMANDS_TO_METHODS[command], *args)
+      else
+        send(COMMANDS_TO_METHODS[command])
+      end
     else
-      prompt
+      puts "no command found" unless COMMANDS_TO_METHODS[command]
     end
   end
 
+  def evaluate(input)
+    command = COMMANDS_TO_METHODS.keys.find {|c| input.include?(c) }
+    args = input.gsub(/#{command}/, '').split(" ")
+    do_command(command, args)
+    prompt
+  end
+
   def find(attribute,criteria)
-    @attribute = attribute.downcase
-    if @attribute == "state"
-      @criteria = criteria.upcase
+    attribute.downcase!
+    if attribute == "city"
+      criteria = criteria.split(" ").map {|word| word.downcase.capitalize}.join(" ")
+    elsif attribute =~ /state/i
+      criteria.upcase!
     else
-      @criteria = criteria.capitalize
+      criteria.capitalize!
     end
-    @results = @people.select {|f| f[@attribute] == @criteria }
+    @results = @people.select {|f| f[attribute] == criteria }
     puts @results
     prompt
   end
@@ -112,34 +118,34 @@ class EventReporter
 
   def queue_print
     @results_array = @results.collect {|r| [r["id"],
-      r["first_name"], r["last_name"],
-      r["email"], r["zipcode"], r["city"],
-      r["state"], r["address"], r["phone"]] }
-    
+                                            r["first_name"], r["last_name"],
+                                            r["email"], r["zipcode"], r["city"],
+                                            r["state"], r["address"], r["phone"]] }
+
     table = Text::Table.new(:head => ['ID', 'FIRSTNAME',
-      'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-      'ADDRESS', 'PHONE'], :rows => @results_array)
+                                      'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
+                                      'ADDRESS', 'PHONE'], :rows => @results_array)
     puts table
     prompt  
   end
 
   def queue_print_by(param)
     @results_array = @results.collect {|r| [r["id"],
-      r["first_name"], r["last_name"],
-      r["email"], r["zipcode"], r["city"],
-      r["state"], r["address"], r["phone"]] }
+                                            r["first_name"], r["last_name"],
+                                            r["email"], r["zipcode"], r["city"],
+                                            r["state"], r["address"], r["phone"]] }
     row = ['ID', 'FIRST_NAME',
-      'LAST_NAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-      'ADDRESS', 'PHONE']
+           'LAST_NAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
+           'ADDRESS', 'PHONE']
     params = param.upcase!
     @index = row.index(params)
     @sorted_array = @results_array.sort_by do |i| 
       i[@index]
     end
-    
+
     puts table = Text::Table.new(:head => ['ID', 'FIRSTNAME',
-      'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-      'ADDRESS', 'PHONE'], :rows => @sorted_array)
+                                           'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
+                                           'ADDRESS', 'PHONE'], :rows => @sorted_array)
     @results_by_attribute = @sorted_array
     prompt
   end
@@ -158,7 +164,7 @@ class EventReporter
     end
     puts ""
   end
-  
+
   def help_print(cmd)
     case cmd
     when 'load <filename>'
@@ -184,9 +190,11 @@ class EventReporter
     filename = "#{filename}"
     File.open(filename,'w') do |file|
       if @results_by_attribute.nil?
-        file.puts @results.to_csv
+        file.puts @results[0].keys.to_csv
+        @results.map {|result| result.values}.each {|attrs| file.puts attrs.to_csv }
       else
-        file.puts @results_by_attribute.to_csv
+        file.puts @results_by_attribute[0].keys.to_csv
+        @results_by_attribute.map {|result| result.values.each {|attrs| file.puts attrs.to_csv }
       end
     end
     prompt
