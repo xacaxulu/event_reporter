@@ -58,23 +58,11 @@ class EventReporter
   end
 
   def evaluate(input)
-      valid_command?(input)
-      command = @command
       command = COMMANDS_TO_METHODS.keys.find {|c| input.include?(c) }
       args = input.gsub(/#{command}/, '').split(" ")
       do_command(command, args)
     prompt
   end
-
-  def valid_command?(param)
-    if COMMANDS_TO_METHODS.keys.find {|c| param.include?(c) }
-      param = @command
-    else
-      puts "please try again"
-      prompt
-    end
-  end
-
 
   def do_command(command, args)
     if COMMANDS_TO_METHODS[command]
