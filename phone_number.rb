@@ -1,7 +1,4 @@
-
-
 class PhoneNumber
-
   INVALID_NUMBER = "0000000000"
 
   def initialize(number)
@@ -11,7 +8,7 @@ class PhoneNumber
   def clean
     phone_number = @number.gsub(/[-., ]/,"")
     cleaned_number = ""
-    if phone_number.nil?
+    if phone_number.nil? || phone_number == ""
       cleaned_number = INVALID_NUMBER
     elsif phone_number.length == 10
       cleaned_number = phone_number

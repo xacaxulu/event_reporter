@@ -1,4 +1,3 @@
-
 class Zipcode
   attr_reader :zipcode
   
