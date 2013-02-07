@@ -57,6 +57,15 @@ class EventReporter
     puts "Loaded #{@people.count} Records from file: '#{arg}'..."
   end
 
+  def evaluate(input)
+    #binding.pry
+    command = COMMANDS_TO_METHODS.keys.find {|c| input.include?(c) }
+    args = input.gsub(/#{command}/, '').split(" ")
+    do_command(command, args)
+    prompt
+  end
+
+
   def do_command(command, args)
     if COMMANDS_TO_METHODS[command]
       if args.any?
@@ -69,13 +78,6 @@ class EventReporter
     end
   end
 
-  def evaluate(input)
-    command = COMMANDS_TO_METHODS.keys.find {|c| input.include?(c) }
-    args = input.gsub(/#{command}/, '').split(" ")
-    do_command(command, args)
-    prompt
-  end
-
   def find(attribute,criteria)
     attribute.downcase!
     if attribute == "city"
@@ -86,7 +88,7 @@ class EventReporter
       criteria.capitalize!
     end
     @results = @people.select {|f| f[attribute] == criteria }
-    puts @results
+    queue_print
     prompt
   end
 
@@ -128,10 +130,11 @@ class EventReporter
       r["first_name"], r["last_name"],
       r["email"], r["zipcode"], r["city"],
       r["state"], r["address"], r["phone"]] }
+    
     row = ['ID', 'FIRST_NAME',
      'LAST_NAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
      'ADDRESS', 'PHONE']
-    
+
     params = param.upcase!
     @index = row.index(params)
     @sorted_array = @results_array.sort_by do |i| 
@@ -188,8 +191,8 @@ class EventReporter
         file.puts @results[0].keys.to_csv
         @results.map {|result| result.values}.each {|attrs| file.puts attrs.to_csv }
       else
-        file.puts @results_by_attribute[0].keys.to_csv
-          @results_by_attribute.map {|result| result.values}.each {|attrs| file.puts attrs.to_csv }
+        file.puts @results[0].keys.to_csv
+        @results_by_attribute.map {|result| result}.each {|r| file.puts r.to_csv}
       end
     end
     prompt
