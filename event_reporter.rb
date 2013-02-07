@@ -14,7 +14,7 @@ end
 
 AVAILABLE_COMMANDS = ['load <filename>', 'help', 'help <command>', 'queue count', 'queue clear', 'queue print',
                       'queue print by <attribute>', 'queue save to <filename.csv>', 'find']
-COMMANDS_TO_METHODS = { 'load' => :database_load,
+COMMANDS_TO_METHODS = { 'load' => :load,
                         'find' => :find,
                         'queue count' => :queue_count,
                         'queue print by' => :queue_print_by,
@@ -28,34 +28,43 @@ class EventReporter
   def initialize
     puts "****************************"
     puts "EventReporter Initialized..."
+    printf "Welcome to EventReporter: "
     prompt
   end
 
   def prompt
     puts ""
-    printf "Welcome to EventReporter: please type a selection: "
+    printf "Please type a selection: "
     input = gets.chomp.downcase
     evaluate(input)
   end
 
-  def database_load(arg='event_attendees.csv')
-    @contents = CSV.open(arg, headers: true, header_converters: :symbol)
+  def some_method(filename)
+    @contents = CSV.open(filename, headers: true, header_converters: :symbol)
+  end
+
+  def load(filename='event_attendees.csv')
+    some_method(filename)
     @people = []
     @contents.each do |row|
-      person = {}
-      person["id"] = row[0]
-      person["regdate"] = row[:regdate]
-      person["first_name"] = row[:first_name].downcase.capitalize
-      person["last_name"] = row[:last_name].downcase.capitalize
-      person["email_address"] = row[:email_address]
-      person["homephone"] = PhoneNumber.new(row[:homephone].to_s)
-      person["street"] = row[:street]
-      person["city"] = City.new(row[:city]).clean
-      person["state"] = row[:state]
-      person["zipcode"] = Zipcode.new(row[:zipcode]).clean
-      @people << person
+      @people << person_build(row)
     end
-    puts "Loaded #{@people.count} Records from file: '#{arg}'..."
+    puts "Loaded #{@people.count} Records from file: '#{filename}'..."
+  end
+
+  def person_build(row)
+    person = {}
+    person["id"] = row[0]
+    person["regdate"] = row[:regdate]
+    person["first_name"] = row[:first_name].downcase.capitalize
+    person["last_name"] = row[:last_name].downcase.capitalize
+    person["email_address"] = row[:email_address]
+    person["homephone"] = PhoneNumber.new(row[:homephone].to_s)
+    person["street"] = row[:street]
+    person["city"] = City.new(row[:city]).clean
+    person["state"] = row[:state]
+    person["zipcode"] = Zipcode.new(row[:zipcode]).clean
+    person
   end
 
   def evaluate(input)
@@ -117,26 +126,26 @@ class EventReporter
     @results = []
     sleep(3)
     puts ""
-    if @results.nil?
-      puts "Current queue count is 0:"
-    else
-      puts "Current queue count is #{@results.length}:"
-    end
+    puts "Current queue count is #{@results.length}:"
     prompt
   end
 
   def queue_print
-    puts "PLEASE LOAD A FILE FOR EVALUATION: " if @people.nil?
-    @results_array = @results.collect {|r| [r["id"],
-      r["first_name"], r["last_name"],
-      r["email_address"], r["zipcode"], r["city"],
-      r["state"], r["street"], r["homephone"]] }
+    if @people.nil?
+      puts "Please load a file first:"
+      prompt
+    else
+      @results_array = @results.collect {|r| [r["id"],
+        r["first_name"], r["last_name"],
+        r["email_address"], r["zipcode"], r["city"],
+        r["state"], r["street"], r["homephone"]] }
 
-    table = Text::Table.new(:head => ['ID', 'FIRST_NAME',
-      'LAST_NAME', 'EMAIL_ADDRESS','ZIPCODE', 'CITY', 'STATE',
-      'STREET', 'HOMEPHONE'], :rows => @results_array)
-    puts table
-    prompt  
+      table = Text::Table.new(:head => ['ID', 'FIRST_NAME',
+        'LAST_NAME', 'EMAIL_ADDRESS','ZIPCODE', 'CITY', 'STATE',
+        'STREET', 'HOMEPHONE'], :rows => @results_array)
+      puts table
+      prompt
+    end  
   end
 
   def queue_print_by(param)
