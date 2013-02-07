@@ -95,19 +95,17 @@ class EventReporter
     if @people.nil?
       puts "PLEASE LOAD A FILE"
       prompt
-    elsif args[0] == 'city'
-      attribute = args[0]
-      criteria = args[1..-1].join(" ")
-      @results = @people.select {|f| f[attribute].to_s.downcase == criteria.downcase }
-    elsif args[0] == 'state'
-      attribute = args[0]
-      criteria = args[1]
-      @results = @people.select {|f| f[attribute].to_s.downcase == criteria.downcase }
-    else
-      attribute = args[0]
-      criteria = args[1..-1].join(" ")
-      @results = @people.select {|f| f[attribute].to_s.downcase == criteria.downcase }
+      return
     end
+    if args[0] == 'city'
+      criteria = args[1..-1].join(" ")
+    elsif args[0] == 'state'
+      criteria = args[1]
+    else
+      criteria = args[1..-1].join(" ")
+    end
+    attribute = args[0]
+    @results = @people.select {|f| f[attribute].to_s.downcase == criteria.downcase }
     queue_print
     prompt
   end
