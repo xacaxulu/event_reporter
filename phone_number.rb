@@ -1,24 +1,40 @@
 class PhoneNumber
   INVALID_NUMBER = "0000000000"
-
-  def initialize(number)
+  def initialize number
     @number = number
+    if valid?(@number)
+      @number = number.gsub(/\D/,"")
+    else
+      clean
+    end
   end
 
   def clean
-    phone_number = @number.gsub(/[-., ]/,"")
-    cleaned_number = ""
-    if phone_number.nil? || phone_number == ""
-      cleaned_number = INVALID_NUMBER
-    elsif phone_number.length == 10
-      cleaned_number = phone_number
-    elsif phone_number.length == 11 && phone_number[0] == "1"
-      cleaned_number = phone_number[1..-1]
-    elsif phone_number.length == 11 && phone_number[0] != "1"
-      cleaned_number = INVALID_NUMBER
-    elsif phone_number.length >= 12
-      cleaned_number = INVALID_NUMBER
+    if has_11_digits? and starts_with_1?
+      @number = @number[1..-1] 
+    elsif invalid_length?
+      @number = nil
     end
-    cleaned_number
   end
+
+  def to_s
+    @number.nil? ? "No Number" : @number
+  end
+
+  def starts_with_1?
+    @number[0].to_i == 1
+  end
+
+  def has_11_digits?
+    @number.length == 11
+  end
+
+  def invalid_length?
+    @number.length != 10
+  end
+
+  def valid?(number)
+    !number.nil?
+  end
+
 end

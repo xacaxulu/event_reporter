@@ -46,9 +46,9 @@ class EventReporter
       person["regdate"] = row[:regdate]
       person["first_name"] = row[:first_name].downcase.capitalize
       person["last_name"] = row[:last_name].downcase.capitalize
-      person["email"] = row[:email_address]
-      person["phone"] = PhoneNumber.new(row[:homephone]).clean
-      person["address"] = row[:street]
+      person["email_address"] = row[:email_address]
+      person["homephone"] = PhoneNumber.new(row[:homephone].to_s)
+      person["street"] = row[:street]
       person["city"] = City.new(row[:city]).clean
       person["state"] = row[:state]
       person["zipcode"] = Zipcode.new(row[:zipcode]).clean
@@ -58,11 +58,21 @@ class EventReporter
   end
 
   def evaluate(input)
-    #binding.pry
-    command = COMMANDS_TO_METHODS.keys.find {|c| input.include?(c) }
-    args = input.gsub(/#{command}/, '').split(" ")
-    do_command(command, args)
+      valid_command?(input)
+      command = @command
+      command = COMMANDS_TO_METHODS.keys.find {|c| input.include?(c) }
+      args = input.gsub(/#{command}/, '').split(" ")
+      do_command(command, args)
     prompt
+  end
+
+  def valid_command?(param)
+    if COMMANDS_TO_METHODS.keys.find {|c| param.include?(c) }
+      param = @command
+    else
+      puts "please try again"
+      prompt
+    end
   end
 
 
@@ -115,12 +125,12 @@ class EventReporter
   def queue_print
     @results_array = @results.collect {|r| [r["id"],
       r["first_name"], r["last_name"],
-      r["email"], r["zipcode"], r["city"],
-      r["state"], r["address"], r["phone"]] }
+      r["email_address"], r["zipcode"], r["city"],
+      r["state"], r["street"], r["homephone"]] }
 
-    table = Text::Table.new(:head => ['ID', 'FIRSTNAME',
-      'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-      'ADDRESS', 'PHONE'], :rows => @results_array)
+    table = Text::Table.new(:head => ['ID', 'FIRST_NAME',
+      'LAST_NAME', 'EMAIL_ADDRESS','ZIPCODE', 'CITY', 'STATE',
+      'STREET', 'HOMEPHONE'], :rows => @results_array)
     puts table
     prompt  
   end
@@ -128,12 +138,12 @@ class EventReporter
   def queue_print_by(param)
     @results_array = @results.collect {|r| [r["id"],
       r["first_name"], r["last_name"],
-      r["email"], r["zipcode"], r["city"],
-      r["state"], r["address"], r["phone"]] }
+      r["email_address"], r["zipcode"], r["city"],
+      r["state"], r["street"], r["homephone"]] }
     
-    row = ['ID', 'FIRST_NAME',
-     'LAST_NAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-     'ADDRESS', 'PHONE']
+    row = ['ID', 'FIRSTNAME',
+     'LAST_NAME', 'EMAIL_ADDRESS','ZIPCODE', 'CITY', 'STATE',
+     'STREET', 'HOMEPHONE']
 
     params = param.upcase!
     @index = row.index(params)
@@ -142,8 +152,8 @@ class EventReporter
     end
 
     puts table = Text::Table.new(:head => ['ID', 'FIRSTNAME',
-     'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-     'ADDRESS', 'PHONE'], :rows => @sorted_array)
+     'LAST_NAME', 'EMAIL_ADDRESS','ZIPCODE', 'CITY', 'STATE',
+     'STREET', 'HOMEPHONE'], :rows => @sorted_array)
     @results_by_attribute = @sorted_array
     prompt
   end
