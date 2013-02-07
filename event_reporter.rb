@@ -14,6 +14,14 @@ end
 
 AVAILABLE_COMMANDS = ['load <filename>', 'help', 'help <command>', 'queue count', 'queue clear', 'queue print',
                       'queue print by <attribute>', 'queue save to <filename.csv>', 'find']
+COMMANDS_TO_METHODS = { 'load' => :database_load,
+                        'find' => :find,
+                        'queue count' => :queue_count,
+                        'queue print by' => :queue_print_by,
+                        'queue clear' => :queue_clear,
+                        'queue print' => :queue_print, 
+                        'queue save to' => :queue_save_to,
+                        'help' => :help, 'q' => :quit }
 
 class EventReporter
   def initialize
@@ -49,19 +57,6 @@ class EventReporter
     puts "Loaded #{@people.count} Records from file: '#{arg}'..."
   end
 
-  COMMANDS_TO_METHODS = { 'load' => :database_load,
-                          'find' => :find,
-                          'queue count' => :queue_count,
-                          'queue print by' => :queue_print_by,
-                          'queue clear' => :queue_clear,
-                          'queue print' => :queue_print, 
-                          'queue save to' => :queue_save_to,
-                          'help' => :help, 'q' => :quit }
-
-  def quit
-    exit
-  end
-
   def do_command(command, args)
     if COMMANDS_TO_METHODS[command]
       if args.any?
@@ -95,7 +90,6 @@ class EventReporter
     prompt
   end
 
-
   def queue_count
     if @results.nil?
       puts "queue count is 0"
@@ -118,25 +112,26 @@ class EventReporter
 
   def queue_print
     @results_array = @results.collect {|r| [r["id"],
-                                            r["first_name"], r["last_name"],
-                                            r["email"], r["zipcode"], r["city"],
-                                            r["state"], r["address"], r["phone"]] }
+      r["first_name"], r["last_name"],
+      r["email"], r["zipcode"], r["city"],
+      r["state"], r["address"], r["phone"]] }
 
     table = Text::Table.new(:head => ['ID', 'FIRSTNAME',
-                                      'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-                                      'ADDRESS', 'PHONE'], :rows => @results_array)
+      'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
+      'ADDRESS', 'PHONE'], :rows => @results_array)
     puts table
     prompt  
   end
 
   def queue_print_by(param)
     @results_array = @results.collect {|r| [r["id"],
-                                            r["first_name"], r["last_name"],
-                                            r["email"], r["zipcode"], r["city"],
-                                            r["state"], r["address"], r["phone"]] }
+      r["first_name"], r["last_name"],
+      r["email"], r["zipcode"], r["city"],
+      r["state"], r["address"], r["phone"]] }
     row = ['ID', 'FIRST_NAME',
-           'LAST_NAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-           'ADDRESS', 'PHONE']
+     'LAST_NAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
+     'ADDRESS', 'PHONE']
+    
     params = param.upcase!
     @index = row.index(params)
     @sorted_array = @results_array.sort_by do |i| 
@@ -144,8 +139,8 @@ class EventReporter
     end
 
     puts table = Text::Table.new(:head => ['ID', 'FIRSTNAME',
-                                           'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
-                                           'ADDRESS', 'PHONE'], :rows => @sorted_array)
+     'LASTNAME', 'EMAIL','ZIPCODE', 'CITY', 'STATE',
+     'ADDRESS', 'PHONE'], :rows => @sorted_array)
     @results_by_attribute = @sorted_array
     prompt
   end
@@ -194,11 +189,16 @@ class EventReporter
         @results.map {|result| result.values}.each {|attrs| file.puts attrs.to_csv }
       else
         file.puts @results_by_attribute[0].keys.to_csv
-        @results_by_attribute.map {|result| result.values.each {|attrs| file.puts attrs.to_csv }
+          @results_by_attribute.map {|result| result.values}.each {|attrs| file.puts attrs.to_csv }
       end
     end
     prompt
   end
+
+  def quit
+    exit
+  end
+
 end
 
 #####
